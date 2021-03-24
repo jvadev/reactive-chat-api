@@ -1,0 +1,24 @@
+db:
+  url: postgresql://localhost:5432/postgres
+  user: postgres
+  password: 1231234
+
+
+spring:
+  r2dbc:
+    url: r2dbc:${db.url}
+    username: ${db.user}
+    password: ${db.password}
+#    pool:
+#      initial-size: 100
+#      max-size: 500
+#      max-idle-time: 30m
+
+
+logging:
+  level:
+    io.r2dbc.postgresql.QUERY: DEBUG
+    io.r2dbc.postgresql.PARAM: DEBUG
+    org.springframework.web.reactive.function.client.ExchangeFunctions: DEBUG
+    io.r2dbc.postgresql.client: DEBUG
+    org.springframework.r2dbc: DEBUG
