@@ -7,11 +7,11 @@ import com.jvadev.reactivechatapi.repository.Message
 import com.jvadev.reactivechatapi.repository.MessageRepository
 import com.jvadev.reactivechatapi.service.MessageVM
 import com.jvadev.reactivechatapi.service.UserVM
-import io.kotest.core.test.TestCase
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
 import org.springframework.test.web.reactive.server.WebTestClient
@@ -21,109 +21,115 @@ import java.time.temporal.ChronoUnit.MILLIS
 
 @AutoConfigureWebTestClient
 internal class MessageControllerTest @Autowired constructor(
-    private val webTestClient: WebTestClient,
-    private val repository: MessageRepository
+        private val webTestClient: WebTestClient,
+        private val repository: MessageRepository
 ) : AbstractIT() {
     init {
         val now = Instant.now()
         lateinit var lastMessageId: String
 
+        beforeSpec {
+            repository.deleteAll()
+        }
+
         beforeEach {
-            runBlocking {
+            coroutineScope {
                 val secondBefore = now.minusSeconds(1)
                 val twoSecondsBefore = now.minusSeconds(2)
                 val messages = repository.saveAll(
-                    listOf(
-                        Message(
-                            content = "**testMessage**",
-                            contentType = ContentType.PLAIN,
-                            sent = twoSecondsBefore,
-                            username = "test",
-                            userAvatarImageLink = "http://test.com/"
-                        ),
-                        Message(
-                            content = "**testMessage1**",
-                            contentType = ContentType.MARKDOWN,
-                            sent = secondBefore,
-                            username = "test1",
-                            userAvatarImageLink = "http://test.com/"
-                        ),
-                        Message(
-                            content = "**testMessage2**",
-                            contentType = ContentType.MARKDOWN,
-                            sent = now,
-                            username = "test2",
-                            userAvatarImageLink = "http://test.com/",
+                        listOf(
+                                Message(
+                                        content = "**testMessage**",
+                                        contentType = ContentType.PLAIN,
+                                        sent = twoSecondsBefore,
+                                        username = "test",
+                                        userAvatarImageLink = "http://test.com/"
+                                ),
+                                Message(
+                                        content = "**testMessage1**",
+                                        contentType = ContentType.MARKDOWN,
+                                        sent = secondBefore,
+                                        username = "test1",
+                                        userAvatarImageLink = "http://test.com/"
+                                ),
+                                Message(
+                                        content = "**testMessage2**",
+                                        contentType = ContentType.MARKDOWN,
+                                        sent = now,
+                                        username = "test2",
+                                        userAvatarImageLink = "http://test.com/",
+                                )
                         )
-                    )
                 )
-                lastMessageId = messages.first().id ?: ""
+                messages.collect {
+                    System.err.println(it)
+                }
             }
         }
 
         afterEach {
-            runBlocking {
+            coroutineScope {
                 repository.deleteAll()
             }
         }
 
         "should return list" {
-            runBlocking {
+            coroutineScope {
                 repository.findAll().count() shouldBe 3
             }
         }
 
         "should return normal list" {
-            runBlocking {
+            coroutineScope {
                 val messages = repository.saveAll(
-                    listOf(
-                        Message(
-                            content = "**testMessage**",
-                            contentType = ContentType.PLAIN,
-                            sent = now.minusSeconds(2),
-                            username = "test",
-                            userAvatarImageLink = "http://test.com/"
-                        ),
-                        Message(
-                            content = "**testMessage1**",
-                            contentType = ContentType.MARKDOWN,
-                            sent = now.minusSeconds(1),
-                            username = "test1",
-                            userAvatarImageLink = "http://test.com/"
-                        ),
-                        Message(
-                            content = "**testMessage2**",
-                            contentType = ContentType.MARKDOWN,
-                            sent = now,
-                            username = "test2",
-                            userAvatarImageLink = "http://test.com/",
+                        listOf(
+                                Message(
+                                        content = "**testMessage**",
+                                        contentType = ContentType.PLAIN,
+                                        sent = now.minusSeconds(2),
+                                        username = "test",
+                                        userAvatarImageLink = "http://test.com/"
+                                ),
+                                Message(
+                                        content = "**testMessage1**",
+                                        contentType = ContentType.MARKDOWN,
+                                        sent = now.minusSeconds(1),
+                                        username = "test1",
+                                        userAvatarImageLink = "http://test.com/"
+                                ),
+                                Message(
+                                        content = "**testMessage2**",
+                                        contentType = ContentType.MARKDOWN,
+                                        sent = now,
+                                        username = "test2",
+                                        userAvatarImageLink = "http://test.com/",
+                                )
                         )
-                    )
                 )
                 messages.count() shouldBe 3
             }
         }
 
         "should return message list by id" {
-            runBlocking {
+            coroutineScope {
                 // when:
                 webTestClient.get()
-                    .uri("/api/v1/messages?lastMessageId=$lastMessageId")
-                    .exchange()
-                    // then:
-                    .expectStatus()
-                    .isOk
-                    .expectBodyList(MessageVM::class.java)
-                    .consumeWith<Nothing> {
-                        it.responseBody?.map { messageVM -> messageVM.prepareForTesting() } shouldBe
-                                listOf(
-                                    MessageVM(
-                                        content = "<body><p><strong>testMessage1</strong></p></body>",
-                                        user = UserVM(name = "test1", avatarImageLink = URL("http://test.com/")),
-                                        sent = now.minusSeconds(1).truncatedTo(MILLIS)
+                        .uri("/api/v1/messages?lastMessageId=$lastMessageId")
+                        .exchange()
+                        // then:
+                        .expectStatus()
+                        .isOk
+                        .expectBodyList(MessageVM::class.java)
+                        .consumeWith<Nothing> {
+                            it.responseBody?.map { messageVM -> messageVM.prepareForTesting() } shouldBe
+                                    listOf(
+                                            MessageVM(
+                                                    content = "<body><p><strong>testMessage1</strong></p></body>",
+                                                    user = UserVM(name = "test1", avatarImageLink = URL("http://test.com/")),
+                                                    sent = now.minusSeconds(1).truncatedTo(MILLIS)
+                                            )
                                     )
-                                )
-                    }
+                        }
             }
         }
     }

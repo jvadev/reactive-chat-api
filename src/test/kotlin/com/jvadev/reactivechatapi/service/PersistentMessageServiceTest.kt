@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.count
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import java.time.Instant
+import kotlin.coroutines.coroutineContext
 
 @DataR2dbcTest
 class PersistentMessageServiceTest(
@@ -19,13 +20,13 @@ class PersistentMessageServiceTest(
     val now = Instant.now()
 
     afterEach {
-        runBlocking {
+        coroutineScope {
             repository.deleteAll()
         }
     }
 
     test("test insertion within coroutine") {
-        runBlocking {
+        coroutineScope {
             val twoSecondsBefore = now.minusSeconds(2)
             val secondBefore = now.minusSeconds(1)
             repository.saveAll(
@@ -87,7 +88,7 @@ class PersistentMessageServiceTest(
                 userAvatarImageLink = "http://test.com/",
             )
         ).block()
-        runBlocking {
+        coroutineScope {
             repository.findAll().count() shouldBe 3
         }
     }
