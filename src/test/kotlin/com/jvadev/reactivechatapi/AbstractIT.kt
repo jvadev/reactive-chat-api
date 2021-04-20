@@ -1,11 +1,11 @@
 package com.jvadev.reactivechatapi
 
-import io.kotest.core.spec.style.AnnotationSpec
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.FunSpec
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Profile
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 )
-class AbstractIT: StringSpec() {
-}
+@Profile("test")
+class AbstractIT: FunSpec()

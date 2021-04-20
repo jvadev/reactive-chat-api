@@ -19,6 +19,6 @@ logging:
   level:
     io.r2dbc.postgresql.QUERY: DEBUG
     io.r2dbc.postgresql.PARAM: DEBUG
-    org.springframework.web.reactive.function.client.ExchangeFunctions: DEBUG
-    io.r2dbc.postgresql.client: DEBUG
-    org.springframework.r2dbc: DEBUG
+    org.springframework.web.reactive.function.client.ExchangeFunctions: INFO
+    io.r2dbc.postgresql.client: INFO
+    org.springframework.r2dbc: INFO
